@@ -1,0 +1,73 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><style>
+:root{color-scheme:light dark;--bg:light-dark(#eef2f7,#1c232d);--tile:light-dark(#ffffff,#2d3846);--fg:light-dark(#1b2430,#e8eef6);--a:light-dark(#2a8cff,#4da3ff);--ok:#2fb344}
+body{margin:0;padding:10px;font-family:system-ui,sans-serif;color:var(--fg);background:var(--bg)}
+.top{display:flex;justify-content:space-between;align-items:center;width:366px;margin:0 auto 10px}
+.top b{font-size:16px}
+.btn{border:0;border-radius:10px;padding:8px 14px;font:inherit;font-size:14px;color:#fff;background:var(--a)}
+.btn:active{opacity:.7}
+#bd{position:relative;width:366px;height:366px;margin:0 auto;border-radius:14px;background:light-dark(#d6dde7,#141a22)}
+.t{position:absolute;left:4px;top:4px;width:86px;height:86px;border:0;border-radius:12px;padding:0;font:inherit;font-size:30px;font-weight:700;color:var(--fg);background:var(--tile);box-shadow:0 2px 0 light-dark(#b9c3d0,#0c1117);transition:transform .15s ease-out,background-color .3s}
+.t:active{opacity:.8}
+.win .t{background:var(--ok);color:#fff}
+#st{text-align:center;margin-top:10px;font-size:15px;min-height:20px}
+</style></head><body>
+<div class="top"><b id="mv">Ходы: 0</b><button class="btn" id="nw">Заново</button></div>
+<div id="bd"></div>
+<div id="st"></div>
+<script>
+var S=90,K='p15',b=[],mv=0,T={},bd=document.getElementById('bd');
+function won(){for(var i=0;i<15;i++)if(b[i]!=i+1)return false;return true}
+function shuffle(){
+  b=[];for(var i=1;i<16;i++)b.push(i);b.push(0);
+  var e=15,p=-1;
+  for(var j=0;j<300;j++){
+    var x=e%4,y=(e/4)|0,c=[];
+    if(x>0)c.push(e-1);if(x<3)c.push(e+1);if(y>0)c.push(e-4);if(y<3)c.push(e+4);
+    c=c.filter(function(q){return q!=p});
+    var n=c[(Math.random()*c.length)|0];
+    b[e]=b[n];b[n]=0;p=e;e=n;
+  }
+  mv=0;
+  if(won())shuffle();
+}
+function save(){try{localStorage.setItem(K,b.join(',')+'|'+mv)}catch(e){}}
+function load(){
+  try{
+    var s=localStorage.getItem(K);if(!s)return false;
+    var p=s.split('|'),a=p[0].split(',').map(Number);
+    if(a.length!=16)return false;
+    var seen={};for(var i=0;i<16;i++){if(!(a[i]>=0&&a[i]<=15)||seen[a[i]])return false;seen[a[i]]=1}
+    b=a;mv=+p[1]||0;return true;
+  }catch(e){return false}
+}
+function draw(){
+  for(var i=0;i<16;i++){
+    var v=b[i];if(!v)continue;
+    T[v].style.transform='translate('+(i%4*S)+'px,'+(((i/4)|0)*S)+'px)';
+  }
+  document.getElementById('mv').textContent='Ходы: '+mv;
+  var w=won();
+  bd.className=w?'win':'';
+  document.getElementById('st').textContent=w?'Собрано за '+mv+' ходов!':'';
+}
+function tap(v){
+  if(won())return;
+  var i=b.indexOf(v),e=b.indexOf(0),xi=i%4,yi=(i/4)|0,xe=e%4,ye=(e/4)|0;
+  if(xi!=xe&&yi!=ye)return;
+  var d=xi==xe?(ye>yi?4:-4):(xe>xi?1:-1),k=e;
+  while(k!=i){b[k]=b[k-d];k-=d}
+  b[i]=0;mv++;draw();save();
+  try{TelegramWidget.haptic&&TelegramWidget.haptic('light')}catch(e){}
+}
+function mk(v){
+  var t=document.createElement('button');
+  t.className='t';t.textContent=v;
+  t.addEventListener('click',function(){tap(v)});
+  bd.appendChild(t);T[v]=t;
+}
+for(var v=1;v<16;v++)mk(v);
+document.getElementById('nw').addEventListener('click',function(){shuffle();draw();save()});
+if(!load())shuffle();
+draw();
+</script></body></html>
